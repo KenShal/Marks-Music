@@ -518,12 +518,17 @@ async function loadToday(quiet = false){
   try {
     const r = await api("today", { start: start.toISOString(), end: end.toISOString() });
     if (seq !== todaySeq) return;
-    const evs = (r.events || []).filter(e => e.summary);
+    // Only classes that have already started show up; later ones appear once their start time passes.
+    const now = new Date();
+    const all = (r.events || []).filter(e => e.summary);
+    const evs = all.filter(e => new Date(e.start) <= now);
+    const next = all.find(e => new Date(e.start) > now);
+    const nextNote = next ? ` Next: ${next.summary.trim()} at ${new Date(next.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.` : "";
     const failed = (r.failed || []).length ? ` Couldn't read ${r.failed.join(" and ")}.` : "";
     box.innerHTML = "";
     $("updated").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-    if (!evs.length) { note.textContent = "No classes on the calendar for this day. Type the student's name below." + failed; return; }
-    note.textContent = "From the class calendars. Tap a class to log it." + failed;
+    if (!evs.length) { note.textContent = (all.length ? "No class has started yet." : "No classes on the calendar for this day. Type the student's name below.") + nextNote + failed; return; }
+    note.textContent = "From the class calendars. Tap a class to log it." + nextNote + failed;
     for (const e of evs) {
       const name = e.summary.trim();
       const allDay = e.end && (new Date(e.end) - new Date(e.start)) >= 86400000;
