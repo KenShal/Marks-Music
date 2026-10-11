@@ -141,6 +141,58 @@ section{display:grid;gap:14px;margin-bottom:40px}
 @keyframes beat{0%,100%{transform:scale(.7);opacity:.5}10%{transform:scale(1.15);opacity:1}}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}*{transition:none!important}}
 @media (max-width:460px){.row{grid-template-columns:minmax(0,1fr) 96px 28px}.opt .path{display:none}.bpm .field{font-size:18px;padding-right:34px;padding-left:8px}.bpm span{right:8px;font-size:10px}}
+/* pages */
+header.top{flex-wrap:wrap;row-gap:14px;margin-bottom:28px}
+.tabs{display:flex;gap:4px;order:2;flex:1 1 auto;justify-content:center}
+.tabs a{color:var(--muted);text-decoration:none;font-weight:500;padding:6px 12px;border-radius:999px;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.lock{order:3}
+@media (max-width:560px){.tabs{order:4;flex-basis:100%;justify-content:flex-start;border-top:1px solid var(--line);padding-top:12px}.tabs a{padding:6px 10px}}
+.logbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:28px}
+.pagehead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.pagetitle{font:400 clamp(36px,9vw,52px)/1 var(--display);margin:0}
+.list{display:grid;border-top:1px solid var(--line)}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:14px 4px;cursor:pointer}
+.srow:hover{background:var(--surface)}
+.srow .nm{font:400 24px/1.1 var(--display)}
+.srow .sm{font-size:12px;color:var(--muted);grid-column:1}
+.srow .ct{font:500 13px var(--mono);color:var(--muted);grid-row:1/3;grid-column:2;align-self:center}
+.back{justify-self:start;padding-left:0;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:22px 0 34px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font:700 22px var(--mono)}
+.stat span{font-size:12px;color:var(--muted)}
+.grp{margin-bottom:30px;display:grid;gap:0}
+.grp .label{padding-bottom:8px;border-bottom:1px solid var(--line)}
+.prog{display:grid;grid-template-columns:minmax(0,1fr) 104px 64px;gap:12px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line)}
+.prog .nm{min-width:0}
+.prog .nm b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog .nm small{font-size:12px;color:var(--muted)}
+.prog .nm small .code{font:600 11px var(--mono);color:var(--brass);margin-right:6px}
+.prog svg{width:104px;height:30px;overflow:visible}
+.prog svg polyline{fill:none;stroke:var(--brass);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.prog svg circle{fill:var(--brass)}
+.prog .sc{text-align:right}
+.prog .sc b{display:block;font:700 18px var(--mono)}
+.prog .sc small{font:500 11px var(--mono);color:var(--muted)}
+.prog .sc small.up{color:var(--good)}
+.hist{display:grid;gap:22px}
+.day{display:grid}
+.day h3{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid var(--line);font:400 24px/1.1 var(--display)}
+.day h3 small{font:500 12px var(--body);color:var(--muted)}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
+.lrow .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .nm .code{font:600 11px var(--mono);color:var(--brass);margin-right:8px}
+.lrow .sc{font:700 15px var(--mono)}
+.lrow .acts{display:flex;gap:4px;align-items:center}
+.lrow .del{color:var(--muted);font-size:13px}
+.lrow .del:hover,.lrow .yes{color:var(--bad)}
+.lrow .yes{font-weight:600}
+.lrow.gone{opacity:.4;text-decoration:line-through}
+.more{justify-self:center}
+select.field{width:100%;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:36px}
+@media (max-width:460px){.prog{grid-template-columns:minmax(0,1fr) 72px 56px;gap:8px}.prog svg{width:72px}.stat b{font-size:18px}}
 body.in .strings{display:none}
 </style>
 
@@ -164,12 +216,19 @@ body.in .strings{display:none}
   <div id="app" hidden>
     <header class="top">
       <div class="brand">Marks <em>Music</em></div>
-      <div class="topr">
-        <input id="classDate" class="date" type="date" aria-label="Class date">
-        <button id="calBtn" class="ghost" type="button">Calendars</button>
-        <button id="lock" class="ghost" type="button">Lock</button>
-      </div>
+      <nav class="tabs" aria-label="Pages">
+        <a href="#log" data-view="log">Log</a>
+        <a href="#dashboard" data-view="dashboard">Dashboard</a>
+        <a href="#history" data-view="history">Log History</a>
+      </nav>
+      <button id="lock" class="ghost lock" type="button">Lock</button>
     </header>
+
+    <div id="view-log" class="view">
+    <div class="logbar">
+      <input id="classDate" class="date" type="date" aria-label="Class date">
+      <button id="calBtn" class="ghost" type="button">Calendars</button>
+    </div>
 
     <section id="settings" class="settings" hidden aria-labelledby="setLbl">
       <h3 id="setLbl">Calendars</h3>
@@ -225,6 +284,35 @@ body.in .strings{display:none}
       <span id="status" class="status" role="status"></span>
     </div>
     <div id="done" class="done" hidden></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="view" hidden>
+      <div id="dashList">
+        <section>
+          <div class="pagehead"><h2 class="pagetitle">Students</h2><span id="dashCount" class="note"></span></div>
+          <input id="dashFilter" class="field" placeholder="Find a student" autocomplete="off" aria-label="Find a student">
+          <div id="studentList" class="list"></div>
+        </section>
+      </div>
+      <div id="dashDetail" hidden>
+        <button id="dashBack" class="ghost back" type="button">← All students</button>
+        <div class="who"><h2 id="dName"></h2><div id="dMeta" class="meta"></div></div>
+        <div id="dStats" class="stats"></div>
+        <div id="dBody"></div>
+      </div>
+    </div>
+
+    <!-- LOG HISTORY -->
+    <div id="view-history" class="view" hidden>
+      <section>
+        <div class="pagehead"><h2 class="pagetitle">Log History</h2><span id="histCount" class="note"></span></div>
+        <select id="histStudent" class="field" aria-label="Show logs for"><option value="">All students</option></select>
+        <div id="histList" class="hist"></div>
+        <button id="histMore" class="ghost more" type="button" hidden>Load more</button>
+        <p id="histNote" class="note" role="status"></p>
+      </section>
+    </div>
   </div>
 </main>
 
@@ -473,7 +561,7 @@ async function save(){
   try {
     const r = await api("log", { student_id: student.id ? Number(student.id) : null, student_name: student.name, date, entries });
     showDone(r, entries, date);
-    if (r.created_student) students.push({ id: r.student_id, name: student.name });
+    if (r.created_student) { students.push({ id: r.student_id, name: student.name }); fillHistStudents(); }
     setStatus("Saved.", "ok");
     rows.forEach(x => document.querySelector(`.row[data-key="${x.key}"]`)?.remove()); rows = []; addRow();
     await pickStudent({ id: r.student_id, name: student.name });
@@ -579,6 +667,178 @@ function drawCalRows(){
   }
 }
 
+/* ---------- pages ---------- */
+const VIEWS = ["log", "dashboard", "history"];
+let dashStudents = null, dashOpen = null;      // cached Dashboard list, open student id
+let hist = { sid: "", rows: [], total: 0 };
+const fmtDay = (d, opts = { weekday: "short", day: "numeric", month: "short", year: "numeric" }) => new Date(d + "T00:00:00").toLocaleDateString(undefined, opts);
+const codeOf = it => { const c = it.codes[0] || ""; return norm(c) === norm(it.label) ? "" : c; };
+const nameOf = id => (students.find(s => s.id === id) || {}).name || "Unknown student";
+
+function showView(){
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "log";
+  for (const k of VIEWS) $("view-" + k).hidden = k !== v;
+  document.querySelectorAll(".tabs a").forEach(a => a.setAttribute("aria-current", a.dataset.view === v ? "page" : "false"));
+  if (v === "dashboard") loadDashboard();
+  if (v === "history") loadHistory();
+  window.scrollTo(0, 0);
+}
+
+/* Dashboard: every student, newest class first; tap one for their progress per exercise. */
+async function loadDashboard(){
+  if (dashOpen) return;
+  const box = $("studentList");
+  if (!dashStudents) box.innerHTML = '<p class="note"><span class="pulse"></span>Loading students…</p>';
+  try {
+    dashStudents = (await api("students")).students || [];
+    drawStudentList();
+  } catch (e) { if (!dashStudents) box.innerHTML = ""; $("dashCount").textContent = errText(e); }
+}
+function drawStudentList(){
+  const box = $("studentList"), n = norm($("dashFilter").value);
+  const list = dashStudents.filter(s => !n || norm(s.name).includes(n));
+  $("dashCount").textContent = `${dashStudents.length} students`;
+  box.innerHTML = "";
+  if (!list.length) { box.innerHTML = '<p class="note" style="padding:14px 4px">No student by that name.</p>'; return; }
+  for (const st of list) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "srow";
+    b.innerHTML = '<span class="nm"></span><span class="sm"></span><span class="ct"></span>';
+    b.children[0].textContent = st.name;
+    b.children[1].textContent = st.last_class ? "Last class " + fmtDay(st.last_class) : "No classes logged yet";
+    b.children[2].textContent = st.classes ? `${st.classes} class${st.classes === 1 ? "" : "es"}` : "";
+    b.addEventListener("click", () => openStudent(st));
+    box.appendChild(b);
+  }
+}
+async function openStudent(st){
+  dashOpen = st.id;
+  $("dashList").hidden = true; $("dashDetail").hidden = false; window.scrollTo(0, 0);
+  $("dName").textContent = st.name;
+  $("dMeta").textContent = st.first_class ? `Logging since ${fmtDay(st.first_class, { month: "short", year: "numeric" })}` : "No classes logged yet";
+  $("dStats").innerHTML = ""; $("dBody").innerHTML = '<p class="note"><span class="pulse"></span>Loading progress…</p>';
+  try {
+    const logs = (await api("student_history", { student_id: st.id })).logs || [];
+    if (dashOpen !== st.id) return;
+    drawProgress(st, logs);
+  } catch (e) { if (dashOpen === st.id) $("dBody").innerHTML = `<p class="note">${errText(e)}</p>`; }
+}
+function spark(points){
+  const W = 100, H = 26, vals = points.map(p => p.score);
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+  const xy = points.map((p, i) => [points.length === 1 ? W : (i / (points.length - 1)) * W, H - ((p.score - lo) / span) * H + 2]);
+  const [lx, ly] = xy[xy.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H + 4}" preserveAspectRatio="none" aria-hidden="true">${points.length > 1 ? `<polyline vector-effect="non-scaling-stroke" points="${xy.map(p => p.join(",")).join(" ")}"/>` : ""}<circle cx="${lx}" cy="${ly}" r="2.6"/></svg>`;
+}
+function drawProgress(st, logs){
+  const byItem = new Map();
+  for (const l of logs) { if (!byItem.has(l.item_id)) byItem.set(l.item_id, []); byItem.get(l.item_id).push(l); }
+  const days = new Set(logs.map(l => l.date));
+  let raised = 0;
+  const rowsOut = [...byItem].map(([id, pts]) => {
+    const it = itemById.get(id) || { label: "Exercise " + id, codes: [], cat: "other" };
+    const best = Math.max(...pts.map(p => p.score)), first = pts[0].score, last = pts[pts.length - 1];
+    if (best > first) raised++;
+    return { it, pts, best, first, last };
+  });
+  const stat = (v, t) => `<div class="stat"><b>${v}</b><span>${t}</span></div>`;
+  $("dStats").innerHTML = stat(days.size, "classes") + stat(byItem.size, "exercises") + stat(raised, "improved");
+  const body = $("dBody"); body.innerHTML = "";
+  if (!rowsOut.length) { body.innerHTML = '<p class="note">No scores logged for this student yet.</p>'; return; }
+  const groups = new Map();
+  for (const r of rowsOut.sort((a, b) => b.last.date.localeCompare(a.last.date))) {
+    const g = tidy(r.it.cat || "other");
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(r);
+  }
+  for (const [g, list] of groups) {
+    const sec = document.createElement("div"); sec.className = "grp";
+    sec.innerHTML = '<div class="label"></div>'; sec.firstChild.textContent = g;
+    for (const r of list) {
+      const el = document.createElement("div"); el.className = "prog";
+      const gain = r.best - r.first;
+      el.innerHTML = `<div class="nm"><b></b><small><span class="code"></span><span class="when"></span></small></div>${spark(r.pts)}<div class="sc"><b></b><small></small></div>`;
+      el.querySelector("b").textContent = r.it.label;
+      el.querySelector(".code").textContent = codeOf(r.it);
+      el.querySelector(".when").textContent = `${r.pts.length}× · last ${fmtDay(r.last.date, { day: "numeric", month: "short" })} at ${r.last.score}`;
+      el.querySelector(".sc b").textContent = r.best;
+      const sm = el.querySelector(".sc small");
+      sm.textContent = gain > 0 ? `+${gain} BPM` : "best BPM"; if (gain > 0) sm.className = "up";
+      el.title = r.pts.map(p => `${fmtDay(p.date, { day: "numeric", month: "short" })}: ${p.score}`).join("\n");
+      sec.appendChild(el);
+    }
+    body.appendChild(sec);
+  }
+  const link = document.createElement("a"); link.href = "#history"; link.className = "ghost"; link.textContent = "See every log for " + st.name + " →";
+  link.addEventListener("click", () => { $("histStudent").value = String(st.id); hist.sid = null; });
+  body.appendChild(link);
+}
+function closeStudent(){ dashOpen = null; $("dashDetail").hidden = true; $("dashList").hidden = false; loadDashboard(); }
+
+/* Log History: every saved score, newest first, with delete. */
+function fillHistStudents(){
+  const sel = $("histStudent"), keep = sel.value;
+  sel.innerHTML = '<option value="">All students</option>';
+  [...students].sort((a, b) => a.name.localeCompare(b.name)).forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name.trim(); sel.appendChild(o); });
+  sel.value = keep;
+}
+async function loadHistory(more = false){
+  const sid = $("histStudent").value;
+  if (!more) { hist = { sid, rows: [], total: 0 }; $("histList").innerHTML = '<p class="note"><span class="pulse"></span>Loading logs…</p>'; $("histMore").hidden = true; }
+  $("histNote").textContent = "";
+  try {
+    const r = await api("history", { student_id: sid ? Number(sid) : null, limit: 200, offset: hist.rows.length });
+    if (hist.sid !== sid) return;
+    hist.rows.push(...(r.rows || [])); hist.total = r.total || 0;
+    drawHistory();
+  } catch (e) { if (!more) $("histList").innerHTML = ""; $("histNote").textContent = errText(e); }
+}
+function drawHistory(){
+  const box = $("histList"); box.innerHTML = "";
+  $("histCount").textContent = `${hist.total} log${hist.total === 1 ? "" : "s"}`;
+  $("histMore").hidden = hist.rows.length >= hist.total;
+  if (!hist.rows.length) { box.innerHTML = '<p class="note">No logs yet.</p>'; return; }
+  let cur = null, list = null;
+  for (const l of hist.rows) {
+    const key = l.date + "|" + l.student_id;
+    if (key !== cur) {
+      cur = key;
+      const day = document.createElement("div"); day.className = "day";
+      day.innerHTML = "<h3><span></span><small></small></h3>";
+      day.querySelector("span").textContent = nameOf(l.student_id);
+      day.querySelector("small").textContent = fmtDay(l.date);
+      box.appendChild(day); list = day;
+    }
+    list.appendChild(histRow(l));
+  }
+}
+function histRow(l){
+  const it = itemById.get(l.item_id) || { label: "Exercise " + l.item_id, codes: [] };
+  const el = document.createElement("div"); el.className = "lrow";
+  el.innerHTML = '<div class="nm"><span class="code"></span><span class="lb"></span></div><div class="sc"></div><div class="acts"><button class="ghost del" type="button">Delete</button></div>';
+  el.querySelector(".code").textContent = codeOf(it);
+  el.querySelector(".lb").textContent = it.label;
+  el.querySelector(".sc").textContent = l.score;
+  const acts = el.querySelector(".acts");
+  const reset = () => { acts.innerHTML = '<button class="ghost del" type="button">Delete</button>'; acts.firstChild.addEventListener("click", ask); };
+  const ask = () => {
+    acts.innerHTML = '<button class="ghost yes" type="button">Delete it</button><button class="ghost no" type="button">Keep</button>';
+    acts.querySelector(".no").addEventListener("click", reset);
+    acts.querySelector(".yes").addEventListener("click", async () => {
+      acts.querySelector(".yes").disabled = true; acts.querySelector(".yes").textContent = "Deleting…";
+      try {
+        await api("delete_log", { log_id: l.id });
+        hist.rows = hist.rows.filter(x => x !== l); hist.total = Math.max(0, hist.total - 1);
+        dashStudents = null;
+        drawHistory();
+        $("histNote").textContent = `Deleted ${it.label} (${l.score} BPM) for ${nameOf(l.student_id)}.`;
+      } catch (e) { reset(); $("histNote").textContent = errText(e); }
+    });
+  };
+  acts.firstChild.addEventListener("click", ask);
+  return el;
+}
+
 /* ---------- boot ---------- */
 async function enter(pw){
   $("loginErr").textContent = ""; $("enter").disabled = true; $("enter").textContent = "Checking…";
@@ -593,6 +853,8 @@ async function enter(pw){
     if (!rows.length) addRow();
     drawCalRows();
     if (!calendars.length) $("settings").hidden = false;
+    fillHistStudents();
+    showView();
     loadToday();
   } catch (e) {
     $("loginErr").textContent = errText(e);
@@ -607,6 +869,12 @@ $("refreshBtn").addEventListener("click", () => { if (PW) loadToday(true); });
 setInterval(() => { if (PW && !document.hidden) loadToday(true); }, 2 * 60 * 1000);
 $("calBtn").addEventListener("click", () => { $("settings").hidden = !$("settings").hidden; });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && PW) { const t = localISO(new Date()); if ($("classDate").dataset.auto !== "0" && $("classDate").value !== t) { $("classDate").value = t; } loadToday(true); } });
+window.addEventListener("hashchange", () => { if (PW) showView(); });
+$("dashFilter").addEventListener("input", () => dashStudents && drawStudentList());
+$("dashBack").addEventListener("click", closeStudent);
+document.querySelector('.tabs a[data-view="dashboard"]').addEventListener("click", () => { if (dashOpen) closeStudent(); });
+$("histStudent").addEventListener("change", () => loadHistory());
+$("histMore").addEventListener("click", () => loadHistory(true));
 $("addRow").addEventListener("click", () => focusRow(addRow()));
 $("save").addEventListener("click", save);
 $("pasteToggle").addEventListener("click", () => { $("pasteBox").hidden = !$("pasteBox").hidden; if (!$("pasteBox").hidden) $("pasteText").focus(); });
