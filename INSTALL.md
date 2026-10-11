@@ -50,7 +50,7 @@ On the iPhone, for each of the three calendars:
 
 When all three show as connected, today's classes appear as buttons at the top of the app. Each button shows the time, the student and a Personal, Offline or Swaralaya tag.
 
-The class list refreshes by itself every 2 minutes and whenever the app is reopened, so an event that is deleted or moved in Calendar drops off the list. Tap **↻ Refresh** to check right away. Apple can take a few minutes to publish a calendar change, so a deleted class may linger briefly.
+A class only appears once its start time has passed; until then the app shows which class is next. The class list refreshes by itself every 2 minutes and whenever the app is reopened, so an event that is deleted or moved in Calendar drops off the list. Tap **↻ Refresh** to check right away. Apple can take a few minutes to publish a calendar change, so a deleted class may linger briefly.
 
 > Anyone who has one of these links can see class names and times. Don't post them anywhere. To stop sharing, turn **Public Calendar** off. Then paste the new link into the app after turning it back on, or tap **Remove**.
 
