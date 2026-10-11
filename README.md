@@ -8,6 +8,9 @@ Class log for Aaron Mark's guitar students. Log each class's exercises and BPM f
 
 ## Using it
 
+Full setup steps for iPhone and Mac are in [INSTALL.md](INSTALL.md).
+
+
 1. Open the site and enter the password. It stays signed in on that device.
 2. iPhone: Share, then Add to Home Screen. Mac (Safari): File, then Add to Dock.
 3. Tap Calendars and paste the Public Calendar link for Personal, Offline and Swaralaya. In the iPhone Calendar app: Calendars, ⓘ next to each one, Public Calendar on, Share Link, Copy.
