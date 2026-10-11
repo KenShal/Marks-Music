@@ -49,6 +49,34 @@ Deno.serve(async (req) => {
         return reply(r.r);
       }
 
+      case "students": {
+        const [r] = await sql`select mm.students_summary(${pw}::text) as r`;
+        return reply({ students: r.r });
+      }
+
+      case "student_history": {
+        const id = Number(body.student_id);
+        if (!Number.isInteger(id)) return reply({ error: "bad_student" }, 400);
+        const [r] = await sql`select mm.student_history(${pw}::text, ${id}::int) as r`;
+        return reply({ logs: r.r });
+      }
+
+      case "history": {
+        const sid = body.student_id == null ? null : Number(body.student_id);
+        if (sid !== null && !Number.isInteger(sid)) return reply({ error: "bad_student" }, 400);
+        const limit = Math.min(Math.max(Number(body.limit) || 200, 1), 1000);
+        const offset = Math.max(Number(body.offset) || 0, 0);
+        const [r] = await sql`select mm.log_history(${pw}::text, ${sid}::int, ${limit}::int, ${offset}::int) as r`;
+        return reply(r.r);
+      }
+
+      case "delete_log": {
+        const id = Number(body.log_id);
+        if (!Number.isInteger(id)) return reply({ error: "bad_log" }, 400);
+        const rows = await sql`delete from public.student_logs where id = ${id} returning id`;
+        return reply({ deleted: rows.length });
+      }
+
       case "log": {
         const sid = body.student_id == null ? null : Number(body.student_id);
         if (sid !== null && !Number.isInteger(sid)) return reply({ error: "bad_student" }, 400);

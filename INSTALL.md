@@ -66,6 +66,13 @@ A class only appears once its start time has passed; until then the app shows wh
 
 If the same exercise is saved twice on one day, only the higher BPM is kept. **Lock** signs the app out on that device.
 
+## Dashboard and Log History
+
+The tabs at the top switch between **Log**, **Dashboard** and **Log History**.
+
+- **Dashboard** lists every student, most recent class first. Tap a student to see each exercise they have done, grouped by category, with their best BPM, how much it has gone up since the first time, and a small line showing the trend.
+- **Log History** lists every saved score, newest first, grouped by student and day. Pick a student at the top to see only theirs. Tap **Delete** on a line, then **Delete it** to remove that score for good, or **Keep** to cancel.
+
 ---
 
 ## 5. Running your own copy (developers)
