@@ -116,10 +116,22 @@ section{display:grid;gap:14px;margin-bottom:40px}
 .done ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
 .done li{display:flex;justify-content:space-between;gap:12px;font-size:14px}
 .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brass);margin-right:8px;animation:beat 1s infinite}
-.tag{font:600 10px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;border-radius:999px;border:1px solid currentColor}
-.tag.Personal{color:var(--brass)}
-.tag.Offline{color:var(--good)}
-.tag.Swaralaya{color:#5b6fd6}
+/* calendar colours, taken from Aaron's iPhone Calendar */
+:root{--cal-personal:#ec13fa;--cal-offline:#f09288;--cal-swaralaya:#ffd303}
+.tag{display:inline-flex;align-items:center;gap:5px;font:600 10px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tag::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--cal,var(--muted))}
+.tag.Personal{--cal:var(--cal-personal)}
+.tag.Offline{--cal:var(--cal-offline)}
+.tag.Swaralaya{--cal:var(--cal-swaralaya)}
+.chip{border-left-width:3px}
+.chip.Personal{border-left-color:var(--cal-personal)}
+.chip.Offline{border-left-color:var(--cal-offline)}
+.chip.Swaralaya{border-left-color:var(--cal-swaralaya)}
+.todayhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.refresh{display:flex;align-items:baseline;gap:6px;font-size:12px;color:var(--muted)}
+.refresh button{font-size:13px}
+.refresh button.spin span{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .settings{display:grid;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
 .settings h3{font:400 26px/1.1 var(--display);margin:0}
 .calrow{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;align-items:center}
@@ -172,7 +184,10 @@ body.in .strings{display:none}
     </section>
 
     <section aria-labelledby="todayLbl">
-      <div class="label" id="todayLbl">Today's classes</div>
+      <div class="todayhead">
+        <div class="label" id="todayLbl">Today's classes</div>
+        <div class="refresh"><span id="updated"></span><button id="refreshBtn" class="ghost" type="button" aria-label="Refresh classes"><span>↻</span> Refresh</button></div>
+      </div>
       <div id="today" class="today"></div>
       <p id="todayNote" class="note"><span class="pulse"></span>Checking the calendar…</p>
     </section>
@@ -489,18 +504,24 @@ function setStatus(t, k = ""){ const s = $("status"); s.textContent = t; s.class
 
 /* ---------- today's classes ---------- */
 function localISO(d){ const p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
-async function loadToday(){
-  const box = $("today"), note = $("todayNote");
-  box.innerHTML = "";
-  if (!calendars.length) { note.textContent = "No calendars connected yet. Tap Calendars at the top to add them, or type the student's name below."; return; }
+// Classes are read fresh from the calendars on every load, so an event deleted
+// in Calendar disappears here on the next refresh.
+let todaySeq = 0;
+async function loadToday(quiet = false){
+  const box = $("today"), note = $("todayNote"), btn = $("refreshBtn");
+  const seq = ++todaySeq;
+  if (!calendars.length) { box.innerHTML = ""; $("updated").textContent = ""; note.textContent = "No calendars connected yet. Tap Calendars at the top to add them, or type the student's name below."; return; }
   const day = $("classDate").value || localISO(new Date());
   const start = new Date(day + "T00:00:00"), end = new Date(start.getTime()); end.setDate(end.getDate() + 1);
-  note.innerHTML = '<span class="pulse"></span>Checking the calendar…';
+  btn.classList.add("spin");
+  if (!quiet) { box.innerHTML = ""; note.innerHTML = '<span class="pulse"></span>Checking the calendar…'; }
   try {
     const r = await api("today", { start: start.toISOString(), end: end.toISOString() });
-    if (day !== ($("classDate").value || day)) return;
+    if (seq !== todaySeq) return;
     const evs = (r.events || []).filter(e => e.summary);
     const failed = (r.failed || []).length ? ` Couldn't read ${r.failed.join(" and ")}.` : "";
+    box.innerHTML = "";
+    $("updated").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     if (!evs.length) { note.textContent = "No classes on the calendar for this day. Type the student's name below." + failed; return; }
     note.textContent = "From the class calendars. Tap a class to log it." + failed;
     for (const e of evs) {
@@ -509,7 +530,7 @@ async function loadToday(){
       const t = allDay ? "All day" : new Date(e.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       const known = matchStudent(name);
       const c = document.createElement("button");
-      c.type = "button"; c.className = "chip"; c.dataset.name = known ? known.name : name; c.setAttribute("aria-pressed", "false");
+      c.type = "button"; c.className = "chip " + e.type; c.dataset.name = known ? known.name : name; c.setAttribute("aria-pressed", "false");
       c.innerHTML = `<span class="mono"></span><span></span><span class="tag"></span>`;
       c.children[0].textContent = t; c.children[1].textContent = known ? known.name : name;
       c.children[2].textContent = e.type; c.children[2].classList.add(e.type);
@@ -519,7 +540,10 @@ async function loadToday(){
     }
     if (student) document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(norm(c.dataset.name) === norm(student.name))));
   } catch (e) {
-    note.textContent = errText(e) + " You can still type the name below.";
+    if (seq !== todaySeq) return;
+    if (!quiet) note.textContent = errText(e) + " You can still type the name below.";
+  } finally {
+    if (seq === todaySeq) btn.classList.remove("spin");
   }
 }
 
@@ -574,8 +598,10 @@ async function enter(pw){
 
 $("loginForm").addEventListener("submit", ev => { ev.preventDefault(); const v = $("pw").value; if (v) enter(v); });
 $("lock").addEventListener("click", () => { store.del("mm_pw"); location.reload(); });
+$("refreshBtn").addEventListener("click", () => { if (PW) loadToday(true); });
+setInterval(() => { if (PW && !document.hidden) loadToday(true); }, 2 * 60 * 1000);
 $("calBtn").addEventListener("click", () => { $("settings").hidden = !$("settings").hidden; });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && PW) { const t = localISO(new Date()); if ($("classDate").dataset.auto !== "0" && $("classDate").value !== t) { $("classDate").value = t; } loadToday(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && PW) { const t = localISO(new Date()); if ($("classDate").dataset.auto !== "0" && $("classDate").value !== t) { $("classDate").value = t; } loadToday(true); } });
 $("addRow").addEventListener("click", () => focusRow(addRow()));
 $("save").addEventListener("click", save);
 $("pasteToggle").addEventListener("click", () => { $("pasteBox").hidden = !$("pasteBox").hidden; if (!$("pasteBox").hidden) $("pasteText").focus(); });
