@@ -57,10 +57,12 @@ A class only appears once its start time has passed; until then the app shows wh
 ## Using it day to day
 
 1. Tap the class at the top, or type the student's name. A name the app doesn't know is added as a new student.
-2. Type an exercise in shorthand and press Enter, then type the BPM and press Enter for the next row.
+2. Type an exercise in shorthand and press Enter, then type the BPM. Press ↓ to start the next exercise row, or Enter to save the class.
    Examples: `FPE9`, `G Scale`, `Exc 1&2 Waltz`, `6SBC`, `HBD Ch`, `T`.
 3. Each row shows the student's current best, and marks a **New best** when the BPM beats it.
-4. Tap **Save class**.
+4. Tap **Save class** (or press Enter in a BPM box). Below the button the app lists every exercise saved for that student on the selected date.
+
+Once a student is picked, **View progress** opens their page on the Dashboard. Tapping **Marks Music** at the top left reloads the app and returns to the Log page.
 
 **Paste notes** takes lines in the old Apple Notes format (`FPE9 120`, one per line) and fills in the rows for you.
 
@@ -70,7 +72,7 @@ If the same exercise is saved twice on one day, only the higher BPM is kept. **L
 
 The tabs at the top switch between **Log**, **Dashboard** and **Log History**.
 
-- **Dashboard** lists every student, most recent class first. Tap a student to see each exercise they have done, grouped by category, with their best BPM, how much it has gone up since the first time, and a small line showing the trend.
+- **Dashboard** shows today's classes at the top; tap one to open that student's progress. Below is every student, most recent class first, with how many different exercises they have done. Type a few letters in the search box, then press ↓ and Enter to open the top match. A student's page shows each exercise they have done, grouped by category in the same order as the exercise list, with their best BPM, how much it has gone up since the first time, and a small line showing the trend.
 - **Log History** lists every saved score, newest first, grouped by student and day. Pick a student at the top to see only theirs. Tap **Delete** on a line, then **Delete it** to remove that score for good, or **Keep** to cancel.
 
 ---

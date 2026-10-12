@@ -70,6 +70,15 @@ Deno.serve(async (req) => {
         return reply(r.r);
       }
 
+      case "day_logs": {
+        const id = Number(body.student_id);
+        if (!Number.isInteger(id)) return reply({ error: "bad_student" }, 400);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body.date))) return reply({ error: "bad_date" }, 400);
+        const rows = await sql`select id, item_id, score from public.student_logs
+                               where student_id = ${id} and created_at::date = ${body.date}::date order by id`;
+        return reply({ logs: rows.map((r) => ({ id: Number(r.id), item_id: Number(r.item_id), score: Number(r.score) })) });
+      }
+
       case "delete_log": {
         const id = Number(body.log_id);
         if (!Number.isInteger(id)) return reply({ error: "bad_log" }, 400);
