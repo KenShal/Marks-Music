@@ -70,6 +70,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .brand{font:400 26px/1 var(--display);white-space:nowrap}
 @media (max-width:460px){.brand{font-size:22px}.topr{gap:2px}.topr .ghost{padding:6px 5px}.date{font-size:12px;padding:5px 6px}}
 .brand em{color:var(--brass)}
+a.brand{color:inherit;text-decoration:none}
 .topr{display:flex;align-items:center;gap:6px}
 .date{background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:500 13px var(--mono)}
 section{display:grid;gap:14px;margin-bottom:40px}
@@ -193,6 +194,10 @@ header.top{flex-wrap:wrap;row-gap:14px;margin-bottom:28px}
 .more{justify-self:center}
 select.field{width:100%;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:36px}
 @media (max-width:460px){.prog{grid-template-columns:minmax(0,1fr) 72px 56px;gap:8px}.prog svg{width:72px}.stat b{font-size:18px}}
+.progress-link{justify-self:start;color:var(--brass);font-size:13px;font-weight:500;text-decoration:none;margin-top:4px}
+.progress-link:hover{text-decoration:underline}
+.srow[aria-selected="true"]{background:var(--brass-soft)}
+.done .when{font:500 12px var(--body);color:var(--muted)}
 body.in .strings{display:none}
 </style>
 
@@ -215,7 +220,7 @@ body.in .strings{display:none}
   <!-- APP -->
   <div id="app" hidden>
     <header class="top">
-      <div class="brand">Marks <em>Music</em></div>
+      <a id="brand" class="brand" href="#log" title="Back to the start">Marks <em>Music</em></a>
       <nav class="tabs" aria-label="Pages">
         <a href="#log" data-view="log">Log</a>
         <a href="#dashboard" data-view="dashboard">Dashboard</a>
@@ -260,6 +265,7 @@ body.in .strings{display:none}
       <div id="who" class="who" hidden>
         <h2 id="whoName"></h2>
         <div id="whoMeta" class="meta"></div>
+        <a id="whoProgress" class="progress-link" href="#dashboard" hidden>View progress →</a>
       </div>
     </section>
 
@@ -288,6 +294,11 @@ body.in .strings{display:none}
 
     <!-- DASHBOARD -->
     <div id="view-dashboard" class="view" hidden>
+      <section id="dashTodaySec" hidden aria-labelledby="dashTodayLbl">
+        <div class="label" id="dashTodayLbl">Today's classes</div>
+        <div id="dashToday" class="today"></div>
+        <p id="dashTodayNote" class="note"></p>
+      </section>
       <div id="dashList">
         <section>
           <div class="pagehead"><h2 class="pagetitle">Students</h2><span id="dashCount" class="note"></span></div>
@@ -462,9 +473,11 @@ async function pickStudent(s, typedName){
   $("studentInput").value = student.name;
   $("who").hidden = false;
   $("whoName").textContent = student.name;
-  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(norm(c.dataset.name) === norm(student.name))));
+  document.querySelectorAll("#today .chip").forEach(c => c.setAttribute("aria-pressed", String(norm(c.dataset.name) === norm(student.name))));
   bests = new Map();
-  if (!student.id) { $("whoMeta").innerHTML = 'First class on record<span class="newtag">New student</span>'; refreshRows(); return; }
+  $("whoProgress").hidden = !student.id;
+  loadDayLogs();
+  if (!student.id) { $("whoMeta").innerHTML = 'First class on record<span class="newtag">New student</span>'; refreshRows(); updateSave(); return; }
   $("whoMeta").textContent = "Loading their best scores…";
   try {
     const r = await api("bests", { student_id: Number(student.id) });
@@ -507,7 +520,11 @@ function drawRow(r){
   });
   ex.addEventListener("change", () => { const it = exact(ex.value); if (it) { r.item = it; ex.value = it.codes[0] || it.label; } else if (!r.item || norm(ex.value) !== norm(r.item.codes[0] || r.item.label)) r.item = null; paintPicked(r, el); updateSave(); });
   bpm.addEventListener("input", () => { bpm.value = bpm.value.replace(/[^\d.]/g, ""); r.bpm = bpm.value; paintPicked(r, el); updateSave(); });
-  bpm.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); const last = rows[rows.length - 1]; if (last === r) addRow(); focusRow(rows[rows.indexOf(r) + 1]); } });
+  bpm.addEventListener("keydown", ev => {
+    if (ev.key === "Enter") { ev.preventDefault(); if (!$("save").disabled) save(); else setStatus(student ? "Pick an exercise and a BPM first." : "Pick a student first.", "bad"); }
+    else if (ev.key === "ArrowDown") { ev.preventDefault(); if (rows[rows.length - 1] === r) addRow(); focusRow(rows[rows.indexOf(r) + 1]); }
+    else if (ev.key === "ArrowUp" && rows.indexOf(r) > 0) { ev.preventDefault(); $("bpm-" + rows[rows.indexOf(r) - 1].key)?.focus(); }
+  });
   el.querySelector(".x").addEventListener("click", () => { rows = rows.filter(x => x !== r); el.remove(); if (!rows.length) addRow(); updateSave(); });
   paintPicked(r, el);
 }
@@ -560,11 +577,13 @@ async function save(){
   $("save").disabled = true; setStatus("Saving…");
   try {
     const r = await api("log", { student_id: student.id ? Number(student.id) : null, student_name: student.name, date, entries });
-    showDone(r, entries, date);
+    saveNote = [r.created_student && "Added as a new student", r.inserted && `${r.inserted} saved`, r.updated && `${r.updated} raised to a higher score`, r.kept && `${r.kept} already had a higher score that day`].filter(Boolean).join(" · ");
+    savedMarks = new Map(entries.map(e => { const b = bests.get(e.item_id); return [e.item_id, !b ? "first" : e.score > b.best ? "new best" : ""]; }));
     if (r.created_student) { students.push({ id: r.student_id, name: student.name }); fillHistStudents(); }
     setStatus("Saved.", "ok");
     rows.forEach(x => document.querySelector(`.row[data-key="${x.key}"]`)?.remove()); rows = []; addRow();
     await pickStudent({ id: r.student_id, name: student.name });
+    focusRow(rows[0]);
   } catch (e) {
     setStatus(e && (e.code === "offline" || e.code === "server_error")
       ? "The save may not have gone through. Check before saving again."
@@ -572,21 +591,34 @@ async function save(){
     updateSave();
   }
 }
-function showDone(r, entries, date){
-  const d = $("done"); d.hidden = false; d.innerHTML = "";
-  const h = document.createElement("h3");
-  h.textContent = `${student.name}, ${new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}`;
-  const meta = document.createElement("div"); meta.className = "note";
-  meta.textContent = [r.created_student && "Added as a new student", r.inserted && `${r.inserted} saved`, r.updated && `${r.updated} raised to a higher score`, r.kept && `${r.kept} already had a higher score that day`].filter(Boolean).join(" · ");
-  const ul = document.createElement("ul");
-  entries.forEach(e => {
-    const it = itemById.get(e.item_id), b = bests.get(e.item_id), li = document.createElement("li");
-    const a = document.createElement("span"); a.textContent = it.label;
-    const s = document.createElement("span"); s.className = "mono" + (!b || e.score > b.best ? " pb up" : "");
-    s.textContent = e.score + (!b ? "  first" : e.score > b.best ? "  new best" : "");
-    li.append(a, s); ul.appendChild(li);
-  });
-  d.append(h, meta, ul);
+// Under Save class: everything saved for this student on the selected date.
+let saveNote = "", savedMarks = new Map(), daySeq = 0;
+async function loadDayLogs(){
+  const d = $("done"), seq = ++daySeq, date = $("classDate").value;
+  if (!student || !student.id || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { d.hidden = true; return; }
+  try {
+    const logs = (await api("day_logs", { student_id: Number(student.id), date })).logs || [];
+    if (seq !== daySeq) return;
+    const note = saveNote, marks = savedMarks; saveNote = ""; savedMarks = new Map();
+    d.innerHTML = "";
+    if (!logs.length) { d.hidden = true; return; }
+    d.hidden = false;
+    const h = document.createElement("h3");
+    h.textContent = `${student.name}, ${fmtDay(date, { weekday: "short", day: "numeric", month: "short" })}`;
+    const meta = document.createElement("div"); meta.className = "note";
+    meta.textContent = (note ? note + " · " : "") + `${logs.length} exercise${logs.length === 1 ? "" : "s"} logged this day`;
+    const ul = document.createElement("ul");
+    for (const l of logs) {
+      const it = itemById.get(l.item_id) || { label: "Exercise " + l.item_id, codes: [] }, li = document.createElement("li");
+      const a = document.createElement("span"); a.textContent = it.label;
+      const c = codeOf(it); if (c) { const k = document.createElement("span"); k.className = "when"; k.textContent = "  " + c; a.appendChild(k); }
+      const m = marks.get(l.item_id) || "";
+      const sc = document.createElement("span"); sc.className = "mono" + (m ? " pb up" : "");
+      sc.textContent = l.score + (m ? "  " + m : "");
+      li.append(a, sc); ul.appendChild(li);
+    }
+    d.append(h, meta, ul);
+  } catch (e) { if (seq === daySeq) { d.hidden = true; } }
 }
 function setStatus(t, k = ""){ const s = $("status"); s.textContent = t; s.className = "status " + k; }
 
@@ -598,7 +630,7 @@ let todaySeq = 0;
 async function loadToday(quiet = false){
   const box = $("today"), note = $("todayNote"), btn = $("refreshBtn");
   const seq = ++todaySeq;
-  if (!calendars.length) { box.innerHTML = ""; $("updated").textContent = ""; note.textContent = "No calendars connected yet. Tap Calendars at the top to add them, or type the student's name below."; return; }
+  if (!calendars.length) { box.innerHTML = ""; $("updated").textContent = ""; $("dashTodaySec").hidden = true; note.textContent = "No calendars connected yet. Tap Calendars at the top to add them, or type the student's name below."; return; }
   const day = $("classDate").value || localISO(new Date());
   const start = new Date(day + "T00:00:00"), end = new Date(start.getTime()); end.setDate(end.getDate() + 1);
   btn.classList.add("spin");
@@ -615,23 +647,16 @@ async function loadToday(quiet = false){
     const failed = (r.failed || []).length ? ` Couldn't read ${r.failed.join(" and ")}.` : "";
     box.innerHTML = "";
     $("updated").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    drawDashToday(evs, (evs.length ? "Tap a class to see that student's progress." : all.length ? "No class has started yet." : "No classes on the calendar for this day.") + nextNote + failed);
     if (!evs.length) { note.textContent = (all.length ? "No class has started yet." : "No classes on the calendar for this day. Type the student's name below.") + nextNote + failed; return; }
     note.textContent = "From the class calendars. Tap a class to log it." + nextNote + failed;
     for (const e of evs) {
-      const name = e.summary.trim();
-      const allDay = e.end && (new Date(e.end) - new Date(e.start)) >= 86400000;
-      const t = allDay ? "All day" : new Date(e.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      const known = matchStudent(name);
-      const c = document.createElement("button");
-      c.type = "button"; c.className = "chip " + e.type; c.dataset.name = known ? known.name : name; c.setAttribute("aria-pressed", "false");
-      c.innerHTML = `<span class="mono"></span><span></span><span class="tag"></span>`;
-      c.children[0].textContent = t; c.children[1].textContent = known ? known.name : name;
-      c.children[2].textContent = e.type; c.children[2].classList.add(e.type);
+      const { c, known, name } = classChip(e);
       if (!known) { const u = document.createElement("span"); u.className = "unknown"; u.textContent = "new"; c.appendChild(u); }
       c.addEventListener("click", () => { pickStudent(known, name); focusRow(rows[0]); });
       box.appendChild(c);
     }
-    if (student) document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(norm(c.dataset.name) === norm(student.name))));
+    if (student) document.querySelectorAll("#today .chip").forEach(c => c.setAttribute("aria-pressed", String(norm(c.dataset.name) === norm(student.name))));
   } catch (e) {
     if (seq !== todaySeq) return;
     if (!quiet) note.textContent = errText(e) + " You can still type the name below.";
@@ -684,6 +709,38 @@ function showView(){
   window.scrollTo(0, 0);
 }
 
+function classChip(e){
+  const name = e.summary.trim(), known = matchStudent(name);
+  const allDay = e.end && (new Date(e.end) - new Date(e.start)) >= 86400000;
+  const c = document.createElement("button");
+  c.type = "button"; c.className = "chip " + e.type; c.dataset.name = known ? known.name : name; c.setAttribute("aria-pressed", "false");
+  c.innerHTML = `<span class="mono"></span><span></span><span class="tag"></span>`;
+  c.children[0].textContent = allDay ? "All day" : new Date(e.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  c.children[1].textContent = known ? known.name : name;
+  c.children[2].textContent = e.type; c.children[2].classList.add(e.type);
+  return { c, known, name };
+}
+function drawDashToday(evs, text){
+  const box = $("dashToday"); box.innerHTML = "";
+  $("dashTodaySec").hidden = false; $("dashTodayNote").textContent = text;
+  for (const e of evs) {
+    const { c, known, name } = classChip(e);
+    c.addEventListener("click", () => known ? openProgress(known.id, known.name) : ($("dashTodayNote").textContent = `${name} isn't a saved student yet, so there's no progress to show.`));
+    box.appendChild(c);
+  }
+}
+// Opens a student's progress page from anywhere in the app.
+async function openProgress(id, name){
+  dashOpen = id;
+  if (location.hash !== "#dashboard") location.hash = "dashboard";
+  let st = dashStudents && dashStudents.find(x => x.id === id);
+  if (!st) {
+    try { dashStudents = (await api("students")).students || []; drawStudentList(); } catch {}
+    st = (dashStudents || []).find(x => x.id === id) || { id, name };
+  }
+  if (dashOpen === id) openStudent(st);
+}
+
 /* Dashboard: every student, newest class first; tap one for their progress per exercise. */
 async function loadDashboard(){
   if (dashOpen) return;
@@ -694,11 +751,18 @@ async function loadDashboard(){
     drawStudentList();
   } catch (e) { if (!dashStudents) box.innerHTML = ""; $("dashCount").textContent = errText(e); }
 }
+let dashActive = -1;
+function moveDash(step){
+  const rowsEl = [...document.querySelectorAll("#studentList .srow")]; if (!rowsEl.length) return;
+  dashActive = Math.max(0, Math.min(rowsEl.length - 1, dashActive + step));
+  rowsEl.forEach((el, i) => el.setAttribute("aria-selected", String(i === dashActive)));
+  rowsEl[dashActive].scrollIntoView({ block: "nearest" });
+}
 function drawStudentList(){
   const box = $("studentList"), n = norm($("dashFilter").value);
   const list = dashStudents.filter(s => !n || norm(s.name).includes(n));
   $("dashCount").textContent = `${dashStudents.length} students`;
-  box.innerHTML = "";
+  box.innerHTML = ""; dashActive = -1;
   if (!list.length) { box.innerHTML = '<p class="note" style="padding:14px 4px">No student by that name.</p>'; return; }
   for (const st of list) {
     const b = document.createElement("button");
@@ -706,7 +770,7 @@ function drawStudentList(){
     b.innerHTML = '<span class="nm"></span><span class="sm"></span><span class="ct"></span>';
     b.children[0].textContent = st.name;
     b.children[1].textContent = st.last_class ? "Last class " + fmtDay(st.last_class) : "No classes logged yet";
-    b.children[2].textContent = st.classes ? `${st.classes} class${st.classes === 1 ? "" : "es"}` : "";
+    b.children[2].textContent = st.exercises ? `${st.exercises} exercise${st.exercises === 1 ? "" : "s"}` : "";
     b.addEventListener("click", () => openStudent(st));
     box.appendChild(b);
   }
@@ -746,7 +810,8 @@ function drawProgress(st, logs){
   const body = $("dBody"); body.innerHTML = "";
   if (!rowsOut.length) { body.innerHTML = '<p class="note">No scores logged for this student yet.</p>'; return; }
   const groups = new Map();
-  for (const r of rowsOut.sort((a, b) => b.last.date.localeCompare(a.last.date))) {
+  const pos = it => { const i = items.indexOf(it); return i < 0 ? 1e9 : i; };
+  for (const r of rowsOut.sort((a, b) => pos(a.it) - pos(b.it))) {
     const g = tidy(r.it.cat || "other");
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g).push(r);
@@ -871,6 +936,13 @@ $("calBtn").addEventListener("click", () => { $("settings").hidden = !$("setting
 document.addEventListener("visibilitychange", () => { if (!document.hidden && PW) { const t = localISO(new Date()); if ($("classDate").dataset.auto !== "0" && $("classDate").value !== t) { $("classDate").value = t; } loadToday(true); } });
 window.addEventListener("hashchange", () => { if (PW) showView(); });
 $("dashFilter").addEventListener("input", () => dashStudents && drawStudentList());
+$("dashFilter").addEventListener("keydown", ev => {
+  if (ev.key === "ArrowDown") { ev.preventDefault(); moveDash(1); }
+  else if (ev.key === "ArrowUp") { ev.preventDefault(); moveDash(-1); }
+  else if (ev.key === "Enter") { ev.preventDefault(); const el = document.querySelectorAll("#studentList .srow")[Math.max(dashActive, 0)]; if (el && (dashActive >= 0 || $("dashFilter").value.trim())) el.click(); }
+});
+$("whoProgress").addEventListener("click", ev => { ev.preventDefault(); if (student && student.id) openProgress(student.id, student.name); });
+$("brand").addEventListener("click", ev => { ev.preventDefault(); location.hash = "log"; location.reload(); });
 $("dashBack").addEventListener("click", closeStudent);
 document.querySelector('.tabs a[data-view="dashboard"]').addEventListener("click", () => { if (dashOpen) closeStudent(); });
 $("histStudent").addEventListener("change", () => loadHistory());
@@ -879,7 +951,7 @@ $("addRow").addEventListener("click", () => focusRow(addRow()));
 $("save").addEventListener("click", save);
 $("pasteToggle").addEventListener("click", () => { $("pasteBox").hidden = !$("pasteBox").hidden; if (!$("pasteBox").hidden) $("pasteText").focus(); });
 $("pasteApply").addEventListener("click", applyPaste);
-$("classDate").addEventListener("change", () => { $("classDate").dataset.auto = "0"; loadToday(); });
+$("classDate").addEventListener("change", () => { $("classDate").dataset.auto = "0"; loadToday(); loadDayLogs(); });
 
 combo($("studentInput"), $("studentMenu"),
   v => { const n = norm(v); const hits = students.filter(s => !n || norm(s.name).includes(n)).slice(0, 8); if (n && !students.some(s => norm(s.name) === n)) hits.push({ id: null, name: v.trim(), isNew: true }); return hits; },
